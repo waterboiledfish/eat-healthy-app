@@ -1,0 +1,22 @@
+# 屏蔽编译产生的文件夹（这是数量最多的垃圾文件来源）
+/target/
+bin/
+out/
+
+# 屏蔽 IDE（VS Code/IntelliJ）的配置文件
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+.factorypath
+
+# 屏蔽系统产生的临时文件
+**.DS_Store
+Thumbs.db
+
+# 屏蔽日志文件
+*.log
