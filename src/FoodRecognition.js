@@ -1,3 +1,4 @@
+
 // src/FoodRecognition.js
 // 百度AI菜品识别集成
 
@@ -112,11 +113,14 @@ export const recognizeFood = async (imageFile) => {
 export const recognizeFoodMock = async (imageFile) => {
   // ... 你之前的模拟逻辑 ...
   await new Promise(resolve => setTimeout(resolve, 800));
+
   const mockFoods = [
     { name: '苹果', calories: 52, confidence: 0.95 },
     { name: '香蕉', calories: 89, confidence: 0.88 },
     { name: '米饭', calories: 130, confidence: 0.82 },
+
   ];
   const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)];
   return { success: true, food: randomFood };
+
 };
