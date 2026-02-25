@@ -1,6 +1,7 @@
 // src/pages/Camera.js
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { recognizeFood } from '../services/baiduAI';
 
 function Camera() {
   const navigate = useNavigate();
@@ -141,65 +142,76 @@ function Camera() {
 
   // 开始识别
   const handleRecognize = async () => {
-    if (!imageFile) {
-      console.log('请先选择图片');
-      return;
-    }
+  if (!imageFile) {
+    console.log('请先选择图片');
+    return;
+  }
 
-    setIsUploading(true);
-    setRecognizing(true);
-    setUploadProgress(0);
+  setIsUploading(true);
+  setRecognizing(true);
+  setUploadProgress(0);
 
-    try {
-      // 模拟上传进度
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
+  try {
+    // 模拟上传进度（保留动画效果）
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
 
-      // 压缩图片
-      const compressedImage = await compressImage(imageFile);
+    // 压缩图片
+    const compressedImage = await compressImage(imageFile);
+    const compressedFile = new File([compressedImage], imageFile.name, { type: imageFile.type });
 
-      // 模拟上传到服务器
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    // 调用真实识别
+    const result = await recognizeFood(compressedFile);
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+    clearInterval(progressInterval);
+    setUploadProgress(100);
 
-      // 模拟AI识别过程
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // 随机选择一个识别结果（模拟AI识别）
-      const randomIndex = Math.floor(Math.random() * mockRecognitionResults.length);
-      const result = mockRecognitionResults[randomIndex];
-
-      setRecognizedFood(result);
+    if (result.success) {
+      // 构建显示用的 food 对象
+      const food = {
+        name: result.food.name,
+        icon: getIconForFood(result.food.name),
+        confidence: result.food.confidence,
+        calories: result.food.calories || 0,
+        protein: result.food.protein || 0,
+        carbs: result.food.carbs || 0,
+        fat: result.food.fat || 0,
+        description: result.source === 'ingredient' ? '果蔬识别' : '菜品识别'
+      };
+      setRecognizedFood(food);
       setShowResult(true);
 
       // 添加到最近识别
       const newRecent = {
         id: Date.now(),
-        name: result.name,
-        icon: result.icon,
-        calories: result.calories,
+        name: food.name,
+        icon: food.icon,
+        calories: food.calories,
         time: new Date().toLocaleTimeString().substring(0, 5)
       };
       setRecentFoods(prev => [newRecent, ...prev.slice(0, 4)]);
 
-      console.log(`识别成功：${result.name}`);
-    } catch (error) {
-      console.log('识别失败，请重试');
-    } finally {
-      setIsUploading(false);
-      setRecognizing(false);
-      setUploadProgress(0);
+      console.log(`识别成功：${food.name}`);
+    } else {
+      console.log('识别失败:', result.message);
+      alert(`识别失败：${result.message || '请重试'}`);
     }
-  };
+  } catch (error) {
+    console.error('识别过程出错:', error);
+    alert('识别过程中发生错误，请重试');
+  } finally {
+    setIsUploading(false);
+    setRecognizing(false);
+    setUploadProgress(0);
+  }
+};
 
   // 重新选择图片
   const handleReset = () => {
@@ -800,3 +812,16 @@ function Camera() {
 }
 
 export default Camera;
+// 根据食物名称返回图标
+const getIconForFood = (name) => {
+  const iconMap = {
+    '苹果': '🍎', '香蕉': '🍌', '橙子': '🍊', '草莓': '🍓',
+    '米饭': '🍚', '面条': '🍜', '面包': '🍞', '鸡蛋': '🥚',
+    '鸡肉': '🍗', '牛肉': '🥩', '鱼': '🐟', '牛奶': '🥛',
+    '番茄': '🍅', '黄瓜': '🥒', '胡萝卜': '🥕', '土豆': '🥔'
+  };
+  for (const key in iconMap) {
+    if (name.includes(key)) return iconMap[key];
+  }
+  return '🍽️';
+};

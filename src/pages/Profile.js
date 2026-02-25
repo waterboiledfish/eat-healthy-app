@@ -1,65 +1,46 @@
-// src/pages/Profile.js
 import React, { useState, useEffect } from 'react';
-import {
-  List,
-  Input,
-  PickerView,
-  DatePicker,
-  Switch,
-  Button,
-  Toast,
-  Modal,
-  ProgressBar,
-  Image
-} from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 
 function Profile() {
   const navigate = useNavigate();
-  
+
   // ==================== 状态管理 ====================
-  // 用户基本信息 - 确保所有数组值非空，避免map报错
   const [userInfo, setUserInfo] = useState({
-    avatar: '',                    // 头像
-    nickname: '美食探索者',        // 昵称
-    realName: '张三',              // 真实姓名
-    gender: '男',                  // 改为字符串，适配PickerView
-    birthday: new Date('2000-01-01'), // 生日
-    age: 24,                       // 年龄
-    height: 175,                   // 身高(cm)
-    weight: 70,                    // 体重(kg)
-    
-    // 健身作息习惯 - 改为字符串，适配PickerView
+    avatar: '',
+    nickname: '美食探索者',
+    realName: '张三',
+    gender: '男',
+    birthday: new Date('2000-01-01'),
+    age: 24,
+    height: 175,
+    weight: 70,
+
     exerciseFrequency: '每周2-3次',
     exerciseType: '跑步',
     dietHabit: '均衡饮食',
-    sleepTime: '23:00',            // 睡觉时间
-    wakeTime: '07:00',             // 起床时间
-    hasSleepHabit: true,           // 是否有规律作息
-    hasAllergy: false,             // 是否有过敏史
-    allergyInfo: '',               // 过敏详情
-    medicalHistory: '',            // 病史
-    healthGoals: '减脂增肌',       // 健康目标
-    
-    // 健康数据
-    bmi: 0,                        // BMI指数
-    bmr: 0,                        // 基础代谢率
-    dailyCalories: 0,              // 每日推荐热量
+    sleepTime: '23:00',
+    wakeTime: '07:00',
+    hasSleepHabit: true,
+    hasAllergy: false,
+    allergyInfo: '',
+    medicalHistory: '',
+    healthGoals: '减脂增肌',
+
+    bmi: 0,
+    bmr: 0,
+    dailyCalories: 0,
   });
-  // 编辑状态
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [tempGoal, setTempGoal] = useState('');
 
-  // ==================== 选项数据 - 扁平化格式，适配PickerView ====================
-  // 性别选项
+  // ==================== 选项数据 ====================
   const genderOptions = [
     { label: '男', value: '男' },
     { label: '女', value: '女' },
     { label: '保密', value: '保密' }
   ];
-  // 运动频率选项
   const exerciseFrequencyOptions = [
     { label: '几乎不运动', value: '几乎不运动' },
     { label: '每周1-2次', value: '每周1-2次' },
@@ -67,7 +48,6 @@ function Profile() {
     { label: '每周3-5次', value: '每周3-5次' },
     { label: '每天运动', value: '每天运动' }
   ];
-  // 运动类型选项
   const exerciseTypeOptions = [
     { label: '跑步', value: '跑步' },
     { label: '游泳', value: '游泳' },
@@ -78,7 +58,6 @@ function Profile() {
     { label: '骑行', value: '骑行' },
     { label: '其他', value: '其他' }
   ];
-  // 饮食习惯选项
   const dietHabitOptions = [
     { label: '均衡饮食', value: '均衡饮食' },
     { label: '素食', value: '素食' },
@@ -87,7 +66,6 @@ function Profile() {
     { label: '地中海饮食', value: '地中海饮食' },
     { label: '无特殊', value: '无特殊' }
   ];
-  // 健康目标选项
   const goalOptions = [
     '减脂',
     '增肌',
@@ -99,7 +77,6 @@ function Profile() {
   ];
 
   // ==================== 计算函数 ====================
-  // 计算BMI
   const calculateBMI = (height, weight) => {
     if (height && weight && height > 0) {
       const heightInM = height / 100;
@@ -107,7 +84,6 @@ function Profile() {
     }
     return 0;
   };
-  // 计算BMR（基础代谢率，使用Mifflin-St Jeor公式）
   const calculateBMR = (gender, weight, height, age) => {
     if (!weight || !height || !age) return 0;
     if (gender === '男') {
@@ -116,12 +92,10 @@ function Profile() {
       return Math.round(10 * weight + 6.25 * height - 5 * age - 161);
     }
   };
-  // 根据运动频率计算每日所需热量
   const calculateDailyCalories = (bmr, exerciseFrequency) => {
     if (!bmr) return 0;
-    // 活动系数
-    let activityFactor = 1.2; // 久坐
-    switch(exerciseFrequency) {
+    let activityFactor = 1.2;
+    switch (exerciseFrequency) {
       case '每周1-2次':
         activityFactor = 1.375;
         break;
@@ -139,13 +113,12 @@ function Profile() {
     }
     return Math.round(bmr * activityFactor);
   };
-  // 更新健康数据
   const updateHealthData = () => {
     const bmi = calculateBMI(userInfo.height, userInfo.weight);
     const bmr = calculateBMR(
-      userInfo.gender, 
-      userInfo.weight, 
-      userInfo.height, 
+      userInfo.gender,
+      userInfo.weight,
+      userInfo.height,
       userInfo.age
     );
     const dailyCalories = calculateDailyCalories(bmr, userInfo.exerciseFrequency);
@@ -156,20 +129,14 @@ function Profile() {
       dailyCalories
     }));
   };
-  // 当身高、体重、年龄、性别、运动频率变化时重新计算
   useEffect(() => {
     updateHealthData();
   }, [userInfo.height, userInfo.weight, userInfo.age, userInfo.gender, userInfo.exerciseFrequency]);
 
   // ==================== 事件处理 ====================
-  // 更新字段
   const updateField = (field, value) => {
-    setUserInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setUserInfo(prev => ({ ...prev, [field]: value }));
   };
-  // 处理头像上传
   const handleAvatarUpload = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -180,637 +147,748 @@ function Profile() {
         const reader = new FileReader();
         reader.onload = (event) => {
           setUserInfo(prev => ({ ...prev, avatar: event.target.result }));
-          Toast.show({ icon: 'success', content: '头像上传成功' });
+          alert('头像上传成功');
         };
         reader.readAsDataURL(file);
       }
     };
     input.click();
   };
-  // 保存个人信息
   const handleSave = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       setIsEditing(false);
-      Toast.show({ icon: 'success', content: '个人信息保存成功！' });
+      alert('个人信息保存成功！');
       updateHealthData();
     }, 1500);
   };
-  // 取消编辑
   const handleCancel = () => {
-    Modal.confirm({
-      title: '提示',
-      content: '确定取消编辑吗？未保存的修改将丢失。',
-      onConfirm: () => {
-        setIsEditing(false);
-        Toast.show({ icon: 'info', content: '已取消编辑' });
-      }
-    });
+    if (window.confirm('确定取消编辑吗？未保存的修改将丢失。')) {
+      setIsEditing(false);
+      alert('已取消编辑');
+    }
   };
-  // 设置健康目标
   const handleSetGoal = () => {
     if (tempGoal) {
       updateField('healthGoals', tempGoal);
       setShowGoalModal(false);
-      Toast.show({ icon: 'success', content: '健康目标已更新' });
+      alert('健康目标已更新');
     }
   };
 
-  // ==================== 渲染自定义选择项（适配非编辑状态） ====================
-  const renderSelectItem = (label, value) => (
-    <List.Item 
-      arrow={isEditing ? 'horizontal' : 'empty'}
-      style={{ pointerEvents: isEditing ? 'auto' : 'none' }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-        <span>{label}</span>
-        <span style={{ color: '#667eea' }}>{value || '未设置'}</span>
+  // 辅助渲染列表项（非编辑态）
+  const renderInfoItem = (label, value) => (
+    <div style={styles.infoItem}>
+      <span style={styles.infoLabel}>{label}</span>
+      <span style={styles.infoValue}>{value || '未设置'}</span>
+    </div>
+  );
+
+  // 自定义选择下拉框（编辑态）
+  const renderSelect = (label, value, options, onChange) => (
+    <div style={styles.fieldContainer}>
+      <span style={styles.fieldLabel}>{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={styles.select}
+        disabled={!isEditing}
+      >
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  // 自定义日期输入（编辑态）
+  const renderDateInput = (label, value, onChange) => (
+    <div style={styles.fieldContainer}>
+      <span style={styles.fieldLabel}>{label}</span>
+      <input
+        type="date"
+        value={value.toISOString().split('T')[0]}
+        onChange={(e) => onChange(new Date(e.target.value))}
+        style={styles.input}
+        disabled={!isEditing}
+      />
+    </div>
+  );
+
+  // 自定义文本输入（编辑态）
+  const renderTextInput = (label, value, onChange, type = 'text', suffix = '') => (
+    <div style={styles.fieldContainer}>
+      <span style={styles.fieldLabel}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={styles.input}
+          disabled={!isEditing}
+        />
+        {suffix && <span style={styles.suffix}>{suffix}</span>}
       </div>
-    </List.Item>
+    </div>
+  );
+
+  // 开关
+  const renderSwitch = (label, checked, onChange) => (
+    <div style={styles.fieldContainer}>
+      <span style={styles.fieldLabel}>{label}</span>
+      <label style={styles.switch}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={!isEditing}
+          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+        />
+        <span style={{
+          ...styles.slider,
+          backgroundColor: checked ? '#667eea' : '#ccc',
+        }} />
+      </label>
+    </div>
   );
 
   // ==================== 渲染界面 ====================
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f5f7fa',
-      paddingBottom: '30px',
-      padding: '0 16px'
-    }}>
+    <div style={styles.container}>
       {/* 头部背景 */}
-      <div style={{
-        height: '120px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '0 0 30px 30px',
-        position: 'relative',
-        marginBottom: '60px',
-        marginLeft: '-16px',
-        marginRight: '-16px'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          color: 'white',
-          fontSize: '24px',
-          cursor: 'pointer',
-          zIndex: 10
-        }} onClick={() => navigate(-1)}>
+      <div style={styles.header}>
+        <div style={styles.backButton} onClick={() => navigate(-1)}>
           ←
         </div>
-        <h2 style={{
-          color: 'white',
-          textAlign: 'center',
-          paddingTop: '20px',
-          margin: 0,
-          fontSize: '20px'
-        }}>
-          个人资料
-        </h2>
+        <h2 style={styles.headerTitle}>个人资料</h2>
       </div>
 
       {/* 头像区域 */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginTop: '-80px',
-        position: 'relative',
-        zIndex: 20
-      }}>
+      <div style={styles.avatarSection}>
         <div
           onClick={isEditing ? handleAvatarUpload : undefined}
-          style={{
-            width: '100px',
-            height: '100px',
-            borderRadius: '50%',
-            background: userInfo.avatar 
-              ? `url(${userInfo.avatar}) center/cover` 
-              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            border: '4px solid white',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            cursor: isEditing ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '36px'
-          }}
+          style={styles.avatarContainer}
         >
-          {!userInfo.avatar && '👤'}
+          {userInfo.avatar ? (
+            <img src={userInfo.avatar} alt="avatar" style={styles.avatarImg} />
+          ) : (
+            <span style={styles.avatarPlaceholder}>👤</span>
+          )}
           {isEditing && (
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              background: '#667eea',
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '16px',
-              border: '2px solid white'
-            }}>
+            <div style={styles.avatarEditIcon}>
               📷
             </div>
           )}
         </div>
-        <h3 style={{ marginTop: '12px', fontSize: '20px', color: '#333' }}>
-          {userInfo.nickname}
-        </h3>
-        <p style={{ fontSize: '14px', color: '#999', marginTop: '4px' }}>
-          {userInfo.gender} · {userInfo.age}岁
-        </p>
+        <h3 style={styles.nickname}>{userInfo.nickname}</h3>
+        <p style={styles.genderAge}>{userInfo.gender} · {userInfo.age}岁</p>
       </div>
 
       {/* 编辑/保存按钮 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'flex-end',
-        margin: '20px 0'
-      }}>
+      <div style={styles.editButtonBar}>
         {!isEditing ? (
-          <Button
-            color="primary"
-            onClick={() => setIsEditing(true)}
-            size="small"
-            style={{ '--border-radius': '20px', padding: '0 20px' }}
-          >
+          <button onClick={() => setIsEditing(true)} style={styles.editButton}>
             编辑资料
-          </Button>
+          </button>
         ) : (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Button
-              onClick={handleCancel}
-              size="small"
-              style={{ '--border-radius': '20px', padding: '0 20px' }}
-            >
+          <div style={styles.editActions}>
+            <button onClick={handleCancel} style={styles.cancelButton}>
               取消
-            </Button>
-            <Button
-              color="primary"
-              onClick={handleSave}
-              loading={loading}
-              size="small"
-              style={{ '--border-radius': '20px', padding: '0 20px' }}
-            >
-              保存
-            </Button>
+            </button>
+            <button onClick={handleSave} style={styles.saveButton} disabled={loading}>
+              {loading ? '保存中...' : '保存'}
+            </button>
           </div>
         )}
       </div>
 
       {/* 健康数据卡片 */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '20px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-      }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#667eea', fontSize: '16px' }}>
-          📊 今日健康数据
-        </h4>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: '15px',
-          textAlign: 'center'
-        }}>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{userInfo.bmi}</div>
-            <div style={{ fontSize: '12px', color: '#999' }}>BMI</div>
+      <div style={styles.healthCard}>
+        <h4 style={styles.cardTitle}>📊 今日健康数据</h4>
+        <div style={styles.healthStats}>
+          <div style={styles.statItem}>
+            <div style={styles.statValue}>{userInfo.bmi}</div>
+            <div style={styles.statLabel}>BMI</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{userInfo.bmr}</div>
-            <div style={{ fontSize: '12px', color: '#999' }}>基础代谢</div>
+          <div style={styles.statItem}>
+            <div style={styles.statValue}>{userInfo.bmr}</div>
+            <div style={styles.statLabel}>基础代谢</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{userInfo.dailyCalories}</div>
-            <div style={{ fontSize: '12px', color: '#999' }}>每日热量</div>
+          <div style={styles.statItem}>
+            <div style={styles.statValue}>{userInfo.dailyCalories}</div>
+            <div style={styles.statLabel}>每日热量</div>
           </div>
         </div>
         {/* BMI状态条 */}
-        <div style={{ marginTop: '15px' }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#999',
-            marginBottom: '5px'
-          }}>
+        <div style={styles.bmiSlider}>
+          <div style={styles.bmiLabels}>
             <span>偏瘦</span><span>正常</span><span>偏胖</span><span>肥胖</span>
           </div>
-          <div style={{
-            height: '6px',
-            background: 'linear-gradient(90deg, #52c41a 0%, #52c41a 30%, #faad14 30%, #faad14 70%, #f5222d 70%, #f5222d 100%)',
-            borderRadius: '3px',
-            position: 'relative'
-          }}>
+          <div style={styles.bmiTrack}>
             <div style={{
-              width: '8px',
-              height: '14px',
-              background: '#333',
-              borderRadius: '4px',
-              position: 'absolute',
-              top: '-4px',
+              ...styles.bmiIndicator,
               left: `${Math.min(Math.max((userInfo.bmi - 15) / 25 * 100, 0), 100)}%`,
-              transform: 'translateX(-50%)'
             }} />
           </div>
         </div>
       </div>
 
-      {/* 基本信息列表 */}
-      <List renderHeader={() => '📋 基本信息'} style={{ marginBottom: '20px' }}>
-        {/* 真实姓名 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>真实姓名</span>
-            <Input
-              placeholder="请输入真实姓名"
-              value={userInfo.realName}
-              onChange={val => updateField('realName', val)}
-              disabled={!isEditing}
-              clearable
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-            />
-          </div>
-        </List.Item>
-        {/* 昵称 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>昵称</span>
-            <Input
-              placeholder="请输入昵称"
-              value={userInfo.nickname}
-              onChange={val => updateField('nickname', val)}
-              disabled={!isEditing}
-              clearable
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-            />
-          </div>
-        </List.Item>
-        {/* 性别选择 - 编辑态用PickerView，非编辑态用普通文本 */}
-        {isEditing ? (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>性别</span>
-              <PickerView
-                options={genderOptions}
-                value={userInfo.gender}
-                onChange={val => updateField('gender', val)}
-                style={{ '--border-radius': '8px' }}
-              />
-            </div>
-          </List.Item>
-        ) : renderSelectItem('性别', userInfo.gender)}
-
-        {/* 生日选择 */}
-        {isEditing ? (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>出生日期</span>
-              <DatePicker
-                value={userInfo.birthday}
-                onChange={val => {
-                  updateField('birthday', val);
-                  updateField('age', new Date().getFullYear() - val.getFullYear());
-                }}
-                mode="date"
-                style={{ '--border-radius': '8px' }}
-              />
-            </div>
-          </List.Item>
-        ) : renderSelectItem('出生日期', userInfo.birthday.toLocaleDateString())}
-
-        {/* 年龄 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>年龄</span>
-            <Input
-              type="number"
-              placeholder="年龄"
-              value={String(userInfo.age)}
-              onChange={val => updateField('age', Number(val))}
-              disabled={!isEditing}
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-            />
-          </div>
-        </List.Item>
-        {/* 身高 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>身高</span>
-            <Input
-              type="number"
-              placeholder="身高(cm)"
-              value={String(userInfo.height)}
-              onChange={val => updateField('height', Number(val))}
-              disabled={!isEditing}
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-              suffix="cm"
-            />
-          </div>
-        </List.Item>
-        {/* 体重 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>体重</span>
-            <Input
-              type="number"
-              placeholder="体重(kg)"
-              value={String(userInfo.weight)}
-              onChange={val => updateField('weight', Number(val))}
-              disabled={!isEditing}
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-              suffix="kg"
-            />
-          </div>
-        </List.Item>
-      </List>
+      {/* 基本信息 */}
+      <div style={styles.section}>
+        <h4 style={styles.sectionTitle}>📋 基本信息</h4>
+        <div style={styles.infoList}>
+          {renderTextInput('真实姓名', userInfo.realName, (val) => updateField('realName', val), 'text')}
+          {renderTextInput('昵称', userInfo.nickname, (val) => updateField('nickname', val), 'text')}
+          {renderSelect('性别', userInfo.gender, genderOptions, (val) => updateField('gender', val))}
+          {renderDateInput('出生日期', userInfo.birthday, (val) => {
+            updateField('birthday', val);
+            updateField('age', new Date().getFullYear() - val.getFullYear());
+          })}
+          {renderTextInput('年龄', userInfo.age, (val) => updateField('age', Number(val)), 'number')}
+          {renderTextInput('身高', userInfo.height, (val) => updateField('height', Number(val)), 'number', 'cm')}
+          {renderTextInput('体重', userInfo.weight, (val) => updateField('weight', Number(val)), 'number', 'kg')}
+        </div>
+      </div>
 
       {/* 健康习惯 */}
-      <List renderHeader={() => '🏃 健康习惯'} style={{ marginBottom: '20px' }}>
-        {/* 运动频率 */}
-        {isEditing ? (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>运动频率</span>
-              <PickerView
-                options={exerciseFrequencyOptions}
-                value={userInfo.exerciseFrequency}
-                onChange={val => updateField('exerciseFrequency', val)}
-                style={{ '--border-radius': '8px' }}
-              />
-            </div>
-          </List.Item>
-        ) : renderSelectItem('运动频率', userInfo.exerciseFrequency)}
-
-        {/* 主要运动 */}
-        {isEditing ? (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>主要运动</span>
-              <PickerView
-                options={exerciseTypeOptions}
-                value={userInfo.exerciseType}
-                onChange={val => updateField('exerciseType', val)}
-                style={{ '--border-radius': '8px' }}
-              />
-            </div>
-          </List.Item>
-        ) : renderSelectItem('主要运动', userInfo.exerciseType)}
-
-        {/* 饮食习惯 */}
-        {isEditing ? (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>饮食习惯</span>
-              <PickerView
-                options={dietHabitOptions}
-                value={userInfo.dietHabit}
-                onChange={val => updateField('dietHabit', val)}
-                style={{ '--border-radius': '8px' }}
-              />
-            </div>
-          </List.Item>
-        ) : renderSelectItem('饮食习惯', userInfo.dietHabit)}
-
-        {/* 规律作息开关 */}
-        <List.Item
-          extra={<Switch
-            checked={userInfo.hasSleepHabit}
-            onChange={val => updateField('hasSleepHabit', val)}
-            disabled={!isEditing}
-          />}
-        >
-          是否有规律作息
-        </List.Item>
-
-        {/* 作息时间 */}
-        {userInfo.hasSleepHabit && (
-          <>
-            <List.Item>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>😴 睡觉时间</span>
-                <Input
-                  placeholder="睡觉时间"
-                  value={userInfo.sleepTime}
-                  onChange={val => updateField('sleepTime', val)}
-                  disabled={!isEditing}
-                  style={{ '--border-radius': '8px', '--font-size': '14px' }}
-                />
-              </div>
-            </List.Item>
-            <List.Item>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>🌅 起床时间</span>
-                <Input
-                  placeholder="起床时间"
-                  value={userInfo.wakeTime}
-                  onChange={val => updateField('wakeTime', val)}
-                  disabled={!isEditing}
-                  style={{ '--border-radius': '8px', '--font-size': '14px' }}
-                />
-              </div>
-            </List.Item>
-          </>
-        )}
-      </List>
+      <div style={styles.section}>
+        <h4 style={styles.sectionTitle}>🏃 健康习惯</h4>
+        <div style={styles.infoList}>
+          {renderSelect('运动频率', userInfo.exerciseFrequency, exerciseFrequencyOptions, (val) => updateField('exerciseFrequency', val))}
+          {renderSelect('主要运动', userInfo.exerciseType, exerciseTypeOptions, (val) => updateField('exerciseType', val))}
+          {renderSelect('饮食习惯', userInfo.dietHabit, dietHabitOptions, (val) => updateField('dietHabit', val))}
+          {renderSwitch('是否有规律作息', userInfo.hasSleepHabit, (val) => updateField('hasSleepHabit', val))}
+          {userInfo.hasSleepHabit && (
+            <>
+              {renderTextInput('😴 睡觉时间', userInfo.sleepTime, (val) => updateField('sleepTime', val), 'text')}
+              {renderTextInput('🌅 起床时间', userInfo.wakeTime, (val) => updateField('wakeTime', val), 'text')}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* 健康信息 */}
-      <List renderHeader={() => '❤️ 健康信息'} style={{ marginBottom: '20px' }}>
-        {/* 过敏史开关 */}
-        <List.Item
-          extra={<Switch
-            checked={userInfo.hasAllergy}
-            onChange={val => updateField('hasAllergy', val)}
-            disabled={!isEditing}
-          />}
-        >
-          是否有过敏史
-        </List.Item>
-        {/* 过敏详情 */}
-        {userInfo.hasAllergy && (
-          <List.Item>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>⚠️ 过敏详情</span>
-              <Input
-                placeholder="请描述过敏情况"
-                value={userInfo.allergyInfo}
-                onChange={val => updateField('allergyInfo', val)}
-                disabled={!isEditing}
-                clearable
-                style={{ '--border-radius': '8px', '--font-size': '14px' }}
-              />
-            </div>
-          </List.Item>
-        )}
-        {/* 既往病史 */}
-        <List.Item>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>📋 既往病史</span>
-            <Input
-              placeholder="既往病史（选填）"
-              value={userInfo.medicalHistory}
-              onChange={val => updateField('medicalHistory', val)}
-              disabled={!isEditing}
-              clearable
-              style={{ '--border-radius': '8px', '--font-size': '14px' }}
-            />
+      <div style={styles.section}>
+        <h4 style={styles.sectionTitle}>❤️ 健康信息</h4>
+        <div style={styles.infoList}>
+          {renderSwitch('是否有过敏史', userInfo.hasAllergy, (val) => updateField('hasAllergy', val))}
+          {userInfo.hasAllergy && (
+            renderTextInput('⚠️ 过敏详情', userInfo.allergyInfo, (val) => updateField('allergyInfo', val), 'text')
+          )}
+          {renderTextInput('📋 既往病史', userInfo.medicalHistory, (val) => updateField('medicalHistory', val), 'text')}
+          <div
+            style={{ ...styles.infoItem, cursor: isEditing ? 'pointer' : 'default' }}
+            onClick={() => isEditing && setShowGoalModal(true)}
+          >
+            <span style={styles.infoLabel}>🎯 健康目标</span>
+            <span style={styles.infoValue}>{userInfo.healthGoals}</span>
           </div>
-        </List.Item>
-        {/* 健康目标 */}
-        <List.Item
-          arrow={isEditing ? 'horizontal' : 'empty'}
-          onClick={() => isEditing && setShowGoalModal(true)}
-          style={{ pointerEvents: isEditing ? 'auto' : 'none' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-            <span>🎯 健康目标</span>
-            <span style={{ color: '#667eea' }}>{userInfo.healthGoals}</span>
-          </div>
-        </List.Item>
-      </List>
+        </div>
+      </div>
 
-      {/* 历史记录汇总 */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '20px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-      }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#667eea', fontSize: '16px' }}>
-          📈 本周进度
-        </h4>
-        <div style={{ marginBottom: '15px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span style={{ fontSize: '14px', color: '#666' }}>运动完成</span>
-            <span style={{ fontSize: '14px', color: '#333' }}>3/5次</span>
+      {/* 本周进度 */}
+      <div style={styles.healthCard}>
+        <h4 style={styles.cardTitle}>📈 本周进度</h4>
+        <div style={styles.progressItem}>
+          <div style={styles.progressLabel}>
+            <span>运动完成</span>
+            <span>3/5次</span>
           </div>
-          <ProgressBar percent={60} color="#667eea" style={{ '--height': '6px', '--border-radius': '3px' }} />
+          <div style={styles.progressBar}>
+            <div style={{ ...styles.progressFill, width: '60%' }} />
+          </div>
         </div>
-        <div style={{ marginBottom: '15px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span style={{ fontSize: '14px', color: '#666' }}>饮食记录</span>
-            <span style={{ fontSize: '14px', color: '#333' }}>5/7天</span>
+        <div style={styles.progressItem}>
+          <div style={styles.progressLabel}>
+            <span>饮食记录</span>
+            <span>5/7天</span>
           </div>
-          <ProgressBar percent={71} color="#667eea" style={{ '--height': '6px', '--border-radius': '3px' }} />
+          <div style={styles.progressBar}>
+            <div style={{ ...styles.progressFill, width: '71%' }} />
+          </div>
         </div>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span style={{ fontSize: '14px', color: '#666' }}>目标进度</span>
-            <span style={{ fontSize: '14px', color: '#333' }}>减脂2.5/5kg</span>
+        <div style={styles.progressItem}>
+          <div style={styles.progressLabel}>
+            <span>目标进度</span>
+            <span>减脂2.5/5kg</span>
           </div>
-          <ProgressBar percent={50} color="#667eea" style={{ '--height': '6px', '--border-radius': '3px' }} />
+          <div style={styles.progressBar}>
+            <div style={{ ...styles.progressFill, width: '50%' }} />
+          </div>
         </div>
       </div>
 
       {/* 操作按钮 */}
-      <div style={{ marginTop: '30px' }}>
-        <Button
-          color="primary"
-          onClick={() => navigate('/camera')}
-          block
-          style={{ '--border-radius': '12px', height: '48px', fontSize: '16px', marginBottom: '10px' }}
-        >
+      <div style={styles.actionButtons}>
+        <button onClick={() => navigate('/camera')} style={styles.primaryButton}>
           📷 去拍照识别食物
-        </Button>
-        <Button
-          onClick={() => navigate('/report')}
-          block
-          style={{ '--border-radius': '12px', height: '48px', fontSize: '16px' }}
-        >
+        </button>
+        <button onClick={() => navigate('/report')} style={styles.secondaryButton}>
           📊 查看历史报告
-        </Button>
+        </button>
       </div>
 
       {/* 退出登录 */}
-      <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '20px' }}>
+      <div style={styles.logoutContainer}>
         <a
           href="#"
-          style={{ color: '#ff4d4f', fontSize: '14px', textDecoration: 'none' }}
+          style={styles.logoutLink}
           onClick={(e) => {
             e.preventDefault();
-            Modal.confirm({
-              title: '提示',
-              content: '确定要退出登录吗？',
-              onConfirm: () => {
-                Toast.show({ icon: 'success', content: '已退出登录' });
-                navigate('/');
-              }
-            });
+            if (window.confirm('确定要退出登录吗？')) {
+              alert('已退出登录');
+              navigate('/');
+            }
           }}
         >
           退出登录
         </a>
       </div>
 
-      {/* 健康目标弹窗 */}
-      <Modal
-        visible={showGoalModal}
-        title="设置健康目标"
-        closeOnAction
-        onClose={() => setShowGoalModal(false)}
-        actions={[
-          { key: 'cancel', text: '取消', onClick: () => setShowGoalModal(false) },
-          { key: 'confirm', text: '确定', primary: true, onClick: handleSetGoal }
-        ]}
-      >
-        <div style={{ padding: '10px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '10px',
-            marginBottom: '15px'
-          }}>
-            {goalOptions.map(goal => (
-              <div
-                key={goal}
-                onClick={() => setTempGoal(goal)}
-                style={{
-                  padding: '12px',
-                  background: tempGoal === goal ? '#667eea' : '#f5f5f5',
-                  color: tempGoal === goal ? 'white' : '#666',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                {goal}
-              </div>
-            ))}
+      {/* 健康目标弹窗（模拟模态框） */}
+      {showGoalModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowGoalModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h4 style={styles.modalTitle}>设置健康目标</h4>
+            <div style={styles.goalGrid}>
+              {goalOptions.map(goal => (
+                <div
+                  key={goal}
+                  onClick={() => setTempGoal(goal)}
+                  style={{
+                    ...styles.goalItem,
+                    backgroundColor: tempGoal === goal ? '#667eea' : '#f5f5f5',
+                    color: tempGoal === goal ? 'white' : '#666',
+                  }}
+                >
+                  {goal}
+                </div>
+              ))}
+            </div>
+            <input
+              type="text"
+              placeholder="或自定义目标"
+              value={tempGoal}
+              onChange={(e) => setTempGoal(e.target.value)}
+              style={styles.modalInput}
+            />
+            <div style={styles.modalActions}>
+              <button onClick={() => setShowGoalModal(false)} style={styles.modalCancel}>
+                取消
+              </button>
+              <button onClick={handleSetGoal} style={styles.modalConfirm}>
+                确定
+              </button>
+            </div>
           </div>
-          <Input
-            placeholder="或自定义目标"
-            value={tempGoal}
-            onChange={setTempGoal}
-            clearable
-            style={{ '--border-radius': '8px', '--font-size': '14px' }}
-          />
         </div>
-      </Modal>
-
-      {/* 全局样式 */}
-      <style global>{`
-        .am-list {
-          --border-color: transparent !important;
-        }
-        .am-list-item {
-          padding: 12px 0 !important;
-          border-bottom: 1px solid #f5f5f5 !important;
-        }
-        .am-list-item:last-child {
-          border-bottom: none !important;
-        }
-      `}</style>
+      )}
     </div>
   );
 }
+
+// ==================== 样式对象 ====================
+const styles = {
+  container: {
+    minHeight: '100vh',
+    backgroundColor: '#f5f7fa',
+    paddingBottom: '30px',
+    padding: '0 16px',
+    fontFamily: 'sans-serif',
+  },
+  header: {
+    height: '120px',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: '0 0 30px 30px',
+    position: 'relative',
+    marginBottom: '60px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+  },
+  backButton: {
+    position: 'absolute',
+    top: '20px',
+    left: '20px',
+    color: 'white',
+    fontSize: '24px',
+    cursor: 'pointer',
+    zIndex: 10,
+  },
+  headerTitle: {
+    color: 'white',
+    textAlign: 'center',
+    paddingTop: '20px',
+    margin: 0,
+    fontSize: '20px',
+  },
+  avatarSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginTop: '-80px',
+    position: 'relative',
+    zIndex: 20,
+  },
+  avatarContainer: {
+    width: '100px',
+    height: '100px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    border: '4px solid white',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontSize: '36px',
+    position: 'relative',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    objectFit: 'cover',
+  },
+  avatarPlaceholder: {
+    fontSize: '36px',
+  },
+  avatarEditIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    background: '#667eea',
+    width: '30px',
+    height: '30px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    border: '2px solid white',
+  },
+  nickname: {
+    marginTop: '12px',
+    fontSize: '20px',
+    color: '#333',
+  },
+  genderAge: {
+    fontSize: '14px',
+    color: '#999',
+    marginTop: '4px',
+  },
+  editButtonBar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    margin: '20px 0',
+  },
+  editButton: {
+    background: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '8px 20px',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+  editActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  cancelButton: {
+    background: '#f0f0f0',
+    border: '1px solid #ddd',
+    borderRadius: '20px',
+    padding: '8px 20px',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+  saveButton: {
+    background: '#667eea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '8px 20px',
+    fontSize: '14px',
+    cursor: 'pointer',
+    opacity: 1,
+    ':disabled': {
+      opacity: 0.6,
+    },
+  },
+  healthCard: {
+    background: 'white',
+    borderRadius: '16px',
+    padding: '20px',
+    marginBottom: '20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+  },
+  cardTitle: {
+    margin: '0 0 15px 0',
+    color: '#667eea',
+    fontSize: '16px',
+  },
+  healthStats: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: '15px',
+    textAlign: 'center',
+    marginBottom: '15px',
+  },
+  statItem: {
+    textAlign: 'center',
+  },
+  statValue: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statLabel: {
+    fontSize: '12px',
+    color: '#999',
+  },
+  bmiSlider: {
+    marginTop: '10px',
+  },
+  bmiLabels: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+    color: '#999',
+    marginBottom: '5px',
+  },
+  bmiTrack: {
+    height: '6px',
+    background: 'linear-gradient(90deg, #52c41a 0%, #52c41a 30%, #faad14 30%, #faad14 70%, #f5222d 70%, #f5222d 100%)',
+    borderRadius: '3px',
+    position: 'relative',
+  },
+  bmiIndicator: {
+    width: '8px',
+    height: '14px',
+    background: '#333',
+    borderRadius: '4px',
+    position: 'absolute',
+    top: '-4px',
+    transform: 'translateX(-50%)',
+  },
+  section: {
+    background: 'white',
+    borderRadius: '16px',
+    padding: '20px',
+    marginBottom: '20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+  },
+  sectionTitle: {
+    margin: '0 0 15px 0',
+    color: '#667eea',
+    fontSize: '16px',
+  },
+  infoList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  infoItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #f5f5f5',
+  },
+  infoLabel: {
+    fontSize: '14px',
+    color: '#666',
+  },
+  infoValue: {
+    fontSize: '14px',
+    color: '#333',
+  },
+  fieldContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    marginBottom: '12px',
+  },
+  fieldLabel: {
+    fontSize: '14px',
+    color: '#666',
+  },
+  input: {
+    padding: '10px 12px',
+    fontSize: '14px',
+    borderRadius: '8px',
+    border: '1px solid #e5e5e5',
+    backgroundColor: '#f8f9fa',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  select: {
+    padding: '10px 12px',
+    fontSize: '14px',
+    borderRadius: '8px',
+    border: '1px solid #e5e5e5',
+    backgroundColor: '#f8f9fa',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  suffix: {
+    marginLeft: '8px',
+    fontSize: '14px',
+    color: '#999',
+  },
+  switch: {
+    position: 'relative',
+    display: 'inline-block',
+    width: '50px',
+    height: '24px',
+  },
+  slider: {
+    position: 'absolute',
+    cursor: 'pointer',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ccc',
+    transition: '.4s',
+    borderRadius: '24px',
+    '&:before': {
+      position: 'absolute',
+      content: '""',
+      height: '18px',
+      width: '18px',
+      left: '3px',
+      bottom: '3px',
+      backgroundColor: 'white',
+      transition: '.4s',
+      borderRadius: '50%',
+    },
+  },
+  progressItem: {
+    marginBottom: '15px',
+  },
+  progressLabel: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: '5px',
+    fontSize: '14px',
+    color: '#666',
+  },
+  progressBar: {
+    height: '6px',
+    backgroundColor: '#f0f0f0',
+    borderRadius: '3px',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#667eea',
+  },
+  actionButtons: {
+    marginTop: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  primaryButton: {
+    width: '100%',
+    borderRadius: '12px',
+    height: '48px',
+    fontSize: '16px',
+    background: '#667eea',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  secondaryButton: {
+    width: '100%',
+    borderRadius: '12px',
+    height: '48px',
+    fontSize: '16px',
+    background: '#f0f0f0',
+    color: '#333',
+    border: '1px solid #ddd',
+    cursor: 'pointer',
+  },
+  logoutContainer: {
+    textAlign: 'center',
+    marginTop: '30px',
+    marginBottom: '20px',
+  },
+  logoutLink: {
+    color: '#ff4d4f',
+    fontSize: '14px',
+    textDecoration: 'none',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '16px',
+    padding: '20px',
+    width: '300px',
+    maxWidth: '90%',
+  },
+  modalTitle: {
+    margin: '0 0 15px 0',
+    fontSize: '18px',
+    color: '#333',
+  },
+  goalGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    marginBottom: '15px',
+  },
+  goalItem: {
+    padding: '12px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    cursor: 'pointer',
+  },
+  modalInput: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #e5e5e5',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+    marginBottom: '15px',
+  },
+  modalActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+  },
+  modalCancel: {
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  modalConfirm: {
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    background: '#667eea',
+    color: 'white',
+    cursor: 'pointer',
+  },
+};
 
 export default Profile;
