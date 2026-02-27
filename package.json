@@ -8,16 +8,13 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
-<<<<<<< HEAD
     "antd-mobile": "^5.42.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.14.2",
-=======
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.13.0",
->>>>>>> cd7bf56906e4df31f952f7c76bbbb18b24c94757
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
