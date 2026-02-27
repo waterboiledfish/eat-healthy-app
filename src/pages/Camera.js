@@ -1,15 +1,7 @@
 // src/pages/Camera.js
 import React, { useState, useRef } from 'react';
-import {
-  Button,
-  Space,
-  Toast,
-  Modal,
-  Image,
-  ProgressBar,
-  Tag
-} from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
+import { recognizeFood } from '../services/baiduAI';
 
 function Camera() {
   const navigate = useNavigate();
@@ -68,26 +60,20 @@ function Camera() {
 
   // 打开相机/相册
   const handleTakePhoto = () => {
-    Modal.confirm({
-      title: '选择图片来源',
-      content: '请选择拍照或从相册选择',
-      confirmText: '拍照',
-      cancelText: '相册',
-      onConfirm: () => {
-        // 拍照
-        if (fileInputRef.current) {
-          fileInputRef.current.setAttribute('capture', 'environment');
-          fileInputRef.current.click();
-        }
-      },
-      onCancel: () => {
-        // 从相册选择
-        if (fileInputRef.current) {
-          fileInputRef.current.removeAttribute('capture');
-          fileInputRef.current.click();
-        }
+    const useCamera = window.confirm('点击“确定”拍照，取消则从相册选择');
+    if (useCamera) {
+      // 拍照
+      if (fileInputRef.current) {
+        fileInputRef.current.setAttribute('capture', 'environment');
+        fileInputRef.current.click();
       }
-    });
+    } else {
+      // 从相册选择
+      if (fileInputRef.current) {
+        fileInputRef.current.removeAttribute('capture');
+        fileInputRef.current.click();
+      }
+    }
   };
 
   // 处理文件选择
@@ -97,22 +83,14 @@ function Camera() {
 
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      Toast.show({
-        icon: 'fail',
-        content: '请选择图片文件'
-      });
+      console.log('图片已选择');
       return;
     }
-
     // 检查文件大小（限制5MB）
     if (file.size > 5 * 1024 * 1024) {
-      Toast.show({
-        icon: 'fail',
-        content: '图片不能超过5MB'
-      });
+      console.log('图片不能超过5MB');
       return;
     }
-
     setImageFile(file);
     
     // 创建预览URL
@@ -123,10 +101,7 @@ function Camera() {
     setRecognizedFood(null);
     setShowResult(false);
     
-    Toast.show({
-      icon: 'success',
-      content: '图片已选择'
-    });
+    console.log('图片已选择');
   };
 
   // 压缩图片
@@ -167,75 +142,76 @@ function Camera() {
 
   // 开始识别
   const handleRecognize = async () => {
-    if (!imageFile) {
-      Toast.show({
-        icon: 'fail',
-        content: '请先选择图片'
+  if (!imageFile) {
+    console.log('请先选择图片');
+    return;
+  }
+
+  setIsUploading(true);
+  setRecognizing(true);
+  setUploadProgress(0);
+
+  try {
+    // 模拟上传进度（保留动画效果）
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
       });
-      return;
-    }
+    }, 200);
 
-    setIsUploading(true);
-    setRecognizing(true);
-    setUploadProgress(0);
+    // 压缩图片
+    const compressedImage = await compressImage(imageFile);
+    const compressedFile = new File([compressedImage], imageFile.name, { type: imageFile.type });
 
-    try {
-      // 模拟上传进度
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
+    // 调用真实识别
+    const result = await recognizeFood(compressedFile);
 
-      // 压缩图片
-      const compressedImage = await compressImage(imageFile);
-      
-      // 模拟上传到服务器
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+    clearInterval(progressInterval);
+    setUploadProgress(100);
 
-      // 模拟AI识别过程
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 随机选择一个识别结果（模拟AI识别）
-      const randomIndex = Math.floor(Math.random() * mockRecognitionResults.length);
-      const result = mockRecognitionResults[randomIndex];
-      
-      setRecognizedFood(result);
+    if (result.success) {
+      // 构建显示用的 food 对象
+      const food = {
+        name: result.food.name,
+        icon: getIconForFood(result.food.name),
+        confidence: result.food.confidence,
+        calories: result.food.calories || 0,
+        protein: result.food.protein || 0,
+        carbs: result.food.carbs || 0,
+        fat: result.food.fat || 0,
+        description: result.source === 'ingredient' ? '果蔬识别' : '菜品识别'
+      };
+      setRecognizedFood(food);
       setShowResult(true);
-      
+
       // 添加到最近识别
       const newRecent = {
         id: Date.now(),
-        name: result.name,
-        icon: result.icon,
-        calories: result.calories,
+        name: food.name,
+        icon: food.icon,
+        calories: food.calories,
         time: new Date().toLocaleTimeString().substring(0, 5)
       };
       setRecentFoods(prev => [newRecent, ...prev.slice(0, 4)]);
-      
-      Toast.show({
-        icon: 'success',
-        content: `识别成功：${result.name}`
-      });
 
-    } catch (error) {
-      Toast.show({
-        icon: 'fail',
-        content: '识别失败，请重试'
-      });
-    } finally {
-      setIsUploading(false);
-      setRecognizing(false);
-      setUploadProgress(0);
+      console.log(`识别成功：${food.name}`);
+    } else {
+      console.log('识别失败:', result.message);
+      alert(`识别失败：${result.message || '请重试'}`);
     }
-  };
+  } catch (error) {
+    console.error('识别过程出错:', error);
+    alert('识别过程中发生错误，请重试');
+  } finally {
+    setIsUploading(false);
+    setRecognizing(false);
+    setUploadProgress(0);
+  }
+};
 
   // 重新选择图片
   const handleReset = () => {
@@ -261,33 +237,27 @@ function Camera() {
     setRecognizedFood(null);
     setShowResult(false);
     
-    Toast.show({
-      content: `已加载${foodName === 'apple' ? '苹果' : '鸡蛋'}示例图片`
-    });
+    console.log(`已加载${foodName === 'apple' ? '苹果' : '鸡蛋'}示例图片`);
   };
 
   // 选择最近识别的食物
   const handleRecentClick = (food) => {
-    Modal.confirm({
-      title: '加载历史记录',
-      content: `是否查看${food.name}的详细报告？`,
-      confirmText: '查看',
-      onConfirm: () => {
-        // 模拟加载历史数据
-        setRecognizedFood({
-          name: food.name,
-          icon: food.icon,
-          confidence: 90,
-          calories: food.calories,
-          protein: food.name === '苹果' ? 0.3 : food.name === '鸡蛋' ? 13 : 2.7,
-          carbs: food.name === '苹果' ? 14 : food.name === '鸡蛋' ? 1.1 : 28,
-          fat: food.name === '苹果' ? 0.2 : food.name === '鸡蛋' ? 9 : 0.3,
-          description: `来自历史记录的${food.name}`
-        });
-        setShowResult(true);
-        navigate('/report');
-      }
-    });
+    const confirmView = window.confirm(`是否查看${food.name}的详细报告？`);
+    if (confirmView) {
+      // 模拟加载历史数据
+      setRecognizedFood({
+        name: food.name,
+        icon: food.icon,
+        confidence: 90,
+        calories: food.calories,
+        protein: food.name === '苹果' ? 0.3 : food.name === '鸡蛋' ? 13 : 2.7,
+        carbs: food.name === '苹果' ? 14 : food.name === '鸡蛋' ? 1.1 : 28,
+        fat: food.name === '苹果' ? 0.2 : food.name === '鸡蛋' ? 9 : 0.3,
+        description: `来自历史记录的${food.name}`
+      });
+      setShowResult(true);
+      navigate('/report');
+    }
   };
 
   // ==================== 渲染界面 ====================
@@ -415,6 +385,8 @@ function Camera() {
                     <div style={{ fontSize: '16px', marginBottom: '10px' }}>
                       {recognizing ? '🤖 AI识别中...' : '📤 上传中...'}
                     </div>
+                    {/* 暂时注释掉 ProgressBar 以排查问题 */}
+                    {/*
                     <ProgressBar 
                       percent={uploadProgress} 
                       style={{ 
@@ -422,6 +394,7 @@ function Camera() {
                         '--fill-color': 'white'
                       }} 
                     />
+                    */}
                   </div>
                 )}
               </>
@@ -440,55 +413,69 @@ function Camera() {
             )}
           </div>
 
-          {/* 操作按钮 */}
-          <Space direction='vertical' block>
-            <Button
-              color='primary'
+          {/* 操作按钮（用 div 替代 Space） */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
               onClick={handleTakePhoto}
               disabled={isUploading || recognizing}
-              block
               style={{
-                '--border-radius': '12px',
+                width: '100%',
+                borderRadius: '12px',
                 height: '48px',
                 fontSize: '16px',
                 background: 'linear-gradient(135deg, #fa8c16 0%, #f5222d 100%)',
-                border: 'none'
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                opacity: isUploading || recognizing ? 0.6 : 1,
+                pointerEvents: isUploading || recognizing ? 'none' : 'auto'
               }}
             >
               📸 {imageUrl ? '重新拍照' : '拍照'}
-            </Button>
+            </button>
 
             {imageUrl && (
               <>
-                <Button
+                <button
                   onClick={handleRecognize}
-                  loading={isUploading || recognizing}
                   disabled={isUploading || recognizing}
-                  block
                   style={{
-                    '--border-radius': '12px',
+                    width: '100%',
+                    borderRadius: '12px',
                     height: '48px',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    background: '#1677ff',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    opacity: isUploading || recognizing ? 0.6 : 1,
+                    pointerEvents: isUploading || recognizing ? 'none' : 'auto'
                   }}
                 >
                   🔍 开始识别
-                </Button>
+                </button>
 
-                <Button
+                <button
                   onClick={handleReset}
                   disabled={isUploading || recognizing}
-                  block
                   style={{
-                    '--border-radius': '12px',
+                    width: '100%',
+                    borderRadius: '12px',
                     height: '48px',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    background: '#f5f5f5',
+                    border: '1px solid #ddd',
+                    color: '#333',
+                    cursor: 'pointer',
+                    opacity: isUploading || recognizing ? 0.6 : 1,
+                    pointerEvents: isUploading || recognizing ? 'none' : 'auto'
                   }}
                 >
                   🔄 重新选择
-                </Button>
+                </button>
               </>
             )}
-          </Space>
+          </div>
         </div>
 
         {/* 识别结果卡片 */}
@@ -537,9 +524,16 @@ function Camera() {
                   justifyContent: 'space-between'
                 }}>
                   <h3 style={{ fontSize: '20px', margin: 0 }}>{recognizedFood.name}</h3>
-                  <Tag color='success' fill='outline'>
+                  {/* 用 span 模拟 Tag */}
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    border: '1px solid #52c41a',
+                    color: '#52c41a'
+                  }}>
                     可信度 {recognizedFood.confidence}%
-                  </Tag>
+                  </span>
                 </div>
                 <p style={{ fontSize: '14px', color: '#999', marginTop: '4px' }}>
                   {recognizedFood.description}
@@ -589,18 +583,21 @@ function Camera() {
               </div>
             </div>
 
-            <Button
-              color='primary'
+            <button
               onClick={handleViewReport}
-              block
               style={{
-                '--border-radius': '12px',
+                width: '100%',
+                borderRadius: '12px',
                 height: '44px',
-                fontSize: '15px'
+                fontSize: '15px',
+                background: '#1677ff',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer'
               }}
             >
               📊 查看详细报告
-            </Button>
+            </button>
           </div>
         )}
 
@@ -758,7 +755,7 @@ function Camera() {
           </ul>
         </div>
 
-        {/* 拍照技巧 */}
+        {/* 拍照技巧（用 span 替代 Tag） */}
         <div style={{
           marginTop: '15px',
           marginBottom: '20px',
@@ -766,10 +763,34 @@ function Camera() {
           gap: '8px',
           flexWrap: 'wrap'
         }}>
-          <Tag color='primary' fill='outline'>📸 光线充足</Tag>
-          <Tag color='primary' fill='outline'>🎯 对准食物</Tag>
-          <Tag color='primary' fill='outline'>🔍 清晰可见</Tag>
-          <Tag color='primary' fill='outline'>🥗 单一食物</Tag>
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            border: '1px solid #1890ff',
+            color: '#1890ff'
+          }}>📸 光线充足</span>
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            border: '1px solid #1890ff',
+            color: '#1890ff'
+          }}>🎯 对准食物</span>
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            border: '1px solid #1890ff',
+            color: '#1890ff'
+          }}>🔍 清晰可见</span>
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            border: '1px solid #1890ff',
+            color: '#1890ff'
+          }}>🥗 单一食物</span>
         </div>
       </div>
 
@@ -791,3 +812,16 @@ function Camera() {
 }
 
 export default Camera;
+// 根据食物名称返回图标
+const getIconForFood = (name) => {
+  const iconMap = {
+    '苹果': '🍎', '香蕉': '🍌', '橙子': '🍊', '草莓': '🍓',
+    '米饭': '🍚', '面条': '🍜', '面包': '🍞', '鸡蛋': '🥚',
+    '鸡肉': '🍗', '牛肉': '🥩', '鱼': '🐟', '牛奶': '🥛',
+    '番茄': '🍅', '黄瓜': '🥒', '胡萝卜': '🥕', '土豆': '🥔'
+  };
+  for (const key in iconMap) {
+    if (name.includes(key)) return iconMap[key];
+  }
+  return '🍽️';
+};

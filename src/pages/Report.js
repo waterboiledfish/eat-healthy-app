@@ -1,13 +1,4 @@
-// src/pages/Report.js
 import React, { useState, useEffect } from 'react';
-import {
-  Button,
-  WhiteSpace,
-  Toast,
-  Modal,
-  ProgressBar,
-  Space
-} from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 
 function Report() {
@@ -19,7 +10,7 @@ function Report() {
     foodName: '苹果',
     foodImage: 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400',
     confidence: 92,
-    
+
     // 营养成分（每100克）
     calories: 52,
     protein: 0.3,
@@ -27,11 +18,11 @@ function Report() {
     fat: 0.2,
     fiber: 2.4,
     sugar: 10,
-    
+
     // 时间信息
     time: new Date().toLocaleTimeString(),
     date: new Date().toLocaleDateString(),
-    
+
     // 用户信息
     userDailyCalories: 2000,
     userBmi: 21.2
@@ -51,25 +42,17 @@ function Report() {
   ];
 
   // ==================== 计算函数 ====================
-
-  // 计算健康评分（基于多种因素）
   const calculateHealthScore = () => {
-    let score = 70; // 基础分
-    
-    // 根据营养成分加减分
-    if (reportData.fat < 5) score += 10; // 低脂加分
-    if (reportData.protein > 5) score += 10; // 高蛋白加分
-    if (reportData.fiber > 3) score += 10; // 高纤维加分
-    if (reportData.sugar > 15) score -= 15; // 高糖减分
-    if (reportData.calories > 300) score -= 10; // 高热量减分
-    
-    // 根据识别置信度调整
+    let score = 70;
+    if (reportData.fat < 5) score += 10;
+    if (reportData.protein > 5) score += 10;
+    if (reportData.fiber > 3) score += 10;
+    if (reportData.sugar > 15) score -= 15;
+    if (reportData.calories > 300) score -= 10;
     if (reportData.confidence > 90) score += 5;
-    
-    return Math.min(Math.max(score, 0), 100); // 确保在0-100之间
+    return Math.min(Math.max(score, 0), 100);
   };
 
-  // 获取健康评分等级
   const getHealthLevel = (score) => {
     if (score >= 90) return { text: '非常健康', color: '#52c41a', icon: '🌟' };
     if (score >= 75) return { text: '比较健康', color: '#95de64', icon: '👍' };
@@ -78,13 +61,10 @@ function Report() {
     return { text: '不太健康', color: '#f5222d', icon: '❌' };
   };
 
-  // 获取健康建议
   const getHealthAdvice = () => {
     const score = healthScore;
     const level = getHealthLevel(score);
-    
     let advice = `本次识别的食物是${reportData.foodName}，${level.text}。`;
-    
     if (reportData.fat > 10) {
       advice += '脂肪含量较高，建议适量食用。';
     } else if (reportData.protein > 10) {
@@ -96,16 +76,13 @@ function Report() {
     } else {
       advice += '营养成分均衡，可以作为日常饮食的一部分。';
     }
-    
     return advice;
   };
 
-  // 计算占每日推荐量的百分比
   const getDailyPercentage = () => {
     return ((reportData.calories / reportData.userDailyCalories) * 100).toFixed(1);
   };
 
-  // 获取食物图标
   const getFoodIcon = () => {
     const icons = {
       '苹果': '🍎',
@@ -119,7 +96,6 @@ function Report() {
       '鱼': '🐟',
       '蔬菜': '🥦'
     };
-    
     return icons[reportData.foodName] || '🍽️';
   };
 
@@ -130,67 +106,41 @@ function Report() {
   const dailyPercentage = getDailyPercentage();
 
   // ==================== 事件处理 ====================
-
-  // 重新识别
   const handleReshoot = () => {
     navigate('/camera');
   };
 
-  // 保存到历史记录
   const handleSave = () => {
     setLoading(true);
-    
-    // 模拟保存
     setTimeout(() => {
       setLoading(false);
-      Toast.show({
-        icon: 'success',
-        content: '已保存到历史记录'
-      });
+      alert('已保存到历史记录');
     }, 1000);
   };
 
-  // 分享报告
   const handleShare = () => {
-    Modal.alert({
-      title: '分享报告',
-      content: `🍱 ${reportData.foodName}\n📊 健康评分: ${healthScore}分\n🔥 热量: ${reportData.calories}kcal`,
-      confirmText: '知道了'
-    });
+    alert(`🍱 ${reportData.foodName}\n📊 健康评分: ${healthScore}分\n🔥 热量: ${reportData.calories}kcal`);
   };
 
-  // 查看历史记录
   const handleViewHistory = () => {
     setHistoryData(mockHistory);
     setShowHistory(true);
   };
 
-  // 加载历史记录中的某一项
   const handleHistoryItemClick = (item) => {
-    Modal.confirm({
-      title: '加载记录',
-      content: `是否加载${item.food}的营养报告？`,
-      confirmText: '加载',
-      onConfirm: () => {
-        // 这里应该从服务器获取完整数据，现在简单模拟
-        setReportData(prev => ({
-          ...prev,
-          foodName: item.food,
-          calories: item.calories,
-          time: item.time
-        }));
-        setShowHistory(false);
-        Toast.show({
-          icon: 'success',
-          content: '已加载历史记录'
-        });
-      }
-    });
+    if (window.confirm(`是否加载${item.food}的营养报告？`)) {
+      setReportData(prev => ({
+        ...prev,
+        foodName: item.food,
+        calories: item.calories,
+        time: item.time
+      }));
+      setShowHistory(false);
+      alert('已加载历史记录');
+    }
   };
 
-  // ==================== 加载数据 ====================
   useEffect(() => {
-    // 模拟从API获取数据
     console.log('加载报告数据...');
   }, []);
 
@@ -201,7 +151,6 @@ function Report() {
       backgroundColor: '#f5f7fa',
       paddingBottom: '30px'
     }}>
-      
       {/* 头部渐变背景 */}
       <div style={{
         height: '160px',
@@ -266,7 +215,6 @@ function Report() {
 
       {/* 主要内容区域 */}
       <div style={{ padding: '0 16px' }}>
-
         {/* 食物名称和可信度 */}
         <div style={{
           marginTop: '50px',
@@ -304,7 +252,6 @@ function Report() {
           <div style={{ fontSize: '14px', color: '#999', marginBottom: '10px' }}>
             本次饮食健康评分
           </div>
-          
           <div style={{
             fontSize: '48px',
             fontWeight: 'bold',
@@ -314,7 +261,6 @@ function Report() {
             {healthScore}
             <span style={{ fontSize: '20px', color: '#999' }}>分</span>
           </div>
-          
           <div style={{
             display: 'inline-block',
             background: healthLevel.color + '20',
@@ -327,15 +273,22 @@ function Report() {
             </span>
           </div>
 
-          {/* 评分进度条 */}
+          {/* 评分进度条（自定义） */}
           <div style={{ marginTop: '20px' }}>
-            <ProgressBar 
-              percent={healthScore} 
-              style={{ 
-                '--track-width': '8px',
-                '--fill-color': healthLevel.color
-              }} 
-            />
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${healthScore}%`,
+                height: '100%',
+                backgroundColor: healthLevel.color,
+                borderRadius: '4px'
+              }} />
+            </div>
           </div>
         </div>
 
@@ -370,10 +323,20 @@ function Report() {
                 {reportData.calories} kcal
               </span>
             </div>
-            <ProgressBar 
-              percent={Math.min(reportData.calories / 5, 100)} 
-              style={{ '--fill-color': '#fa8c16' }} 
-            />
+            <div style={{
+              width: '100%',
+              height: '6px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '3px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${Math.min(reportData.calories / 5, 100)}%`,
+                height: '100%',
+                backgroundColor: '#fa8c16',
+                borderRadius: '3px'
+              }} />
+            </div>
           </div>
 
           {/* 三大营养素网格 */}
@@ -395,7 +358,6 @@ function Report() {
               </div>
               <div style={{ fontSize: '12px', color: '#999' }}>蛋白质</div>
             </div>
-            
             <div style={{
               background: '#f8f9fa',
               padding: '12px',
@@ -408,7 +370,6 @@ function Report() {
               </div>
               <div style={{ fontSize: '12px', color: '#999' }}>碳水</div>
             </div>
-            
             <div style={{
               background: '#f8f9fa',
               padding: '12px',
@@ -476,7 +437,6 @@ function Report() {
               {reportData.calories} kcal
             </span>
           </div>
-
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -488,13 +448,20 @@ function Report() {
             </span>
           </div>
 
-          <ProgressBar 
-            percent={dailyPercentage} 
-            style={{ 
-              '--track-width': '10px',
-              '--fill-color': dailyPercentage > 50 ? '#f5222d' : '#52c41a'
-            }} 
-          />
+          <div style={{
+            width: '100%',
+            height: '10px',
+            backgroundColor: '#f0f0f0',
+            borderRadius: '5px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: `${Math.min(dailyPercentage, 100)}%`,
+              height: '100%',
+              backgroundColor: dailyPercentage > 50 ? '#f5222d' : '#52c41a',
+              borderRadius: '5px'
+            }} />
+          </div>
 
           <p style={{
             textAlign: 'center',
@@ -524,7 +491,6 @@ function Report() {
             <span style={{ fontSize: '20px', marginRight: '8px' }}>💡</span>
             健康建议
           </h4>
-          
           <p style={{
             fontSize: '14px',
             lineHeight: '1.6',
@@ -534,7 +500,6 @@ function Report() {
             {healthAdvice}
           </p>
 
-          {/* 小贴士 */}
           <div style={{
             marginTop: '15px',
             padding: '12px',
@@ -548,58 +513,72 @@ function Report() {
         </div>
 
         {/* 操作按钮 */}
-        <div style={{ marginTop: '30px' }}>
-          <Space direction='vertical' block>
-            <Button
-              color='primary'
-              onClick={handleReshoot}
-              block
-              style={{
-                '--border-radius': '12px',
-                height: '48px',
-                fontSize: '16px'
-              }}
-            >
-              📷 重新拍照识别
-            </Button>
+        <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <button
+            onClick={handleReshoot}
+            style={{
+              width: '100%',
+              borderRadius: '12px',
+              height: '48px',
+              fontSize: '16px',
+              background: '#1890ff',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            📷 重新拍照识别
+          </button>
 
-            <Button
-              onClick={handleSave}
-              loading={loading}
-              block
-              style={{
-                '--border-radius': '12px',
-                height: '48px',
-                fontSize: '16px'
-              }}
-            >
-              💾 保存到历史记录
-            </Button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            style={{
+              width: '100%',
+              borderRadius: '12px',
+              height: '48px',
+              fontSize: '16px',
+              background: '#52c41a',
+              color: 'white',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            {loading ? '保存中...' : '💾 保存到历史记录'}
+          </button>
 
-            <Button
-              onClick={handleShare}
-              block
-              style={{
-                '--border-radius': '12px',
-                height: '48px',
-                fontSize: '16px'
-              }}
-            >
-              📤 分享报告
-            </Button>
+          <button
+            onClick={handleShare}
+            style={{
+              width: '100%',
+              borderRadius: '12px',
+              height: '48px',
+              fontSize: '16px',
+              background: '#fa8c16',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            📤 分享报告
+          </button>
 
-            <Button
-              onClick={handleViewHistory}
-              block
-              style={{
-                '--border-radius': '12px',
-                height: '48px',
-                fontSize: '16px'
-              }}
-            >
-              📚 查看历史记录
-            </Button>
-          </Space>
+          <button
+            onClick={handleViewHistory}
+            style={{
+              width: '100%',
+              borderRadius: '12px',
+              height: '48px',
+              fontSize: '16px',
+              background: '#722ed1',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            📚 查看历史记录
+          </button>
         </div>
 
         {/* 免责声明 */}
@@ -618,57 +597,79 @@ function Report() {
         </div>
       </div>
 
-      {/* 历史记录弹窗 */}
-      <Modal
-        visible={showHistory}
-        title="历史记录"
-        closeOnAction
-        onClose={() => setShowHistory(false)}
-        bodyStyle={{
-          maxHeight: '60vh',
-          overflowY: 'auto'
-        }}
-        actions={[
-          {
-            key: 'close',
-            text: '关闭',
-            onClick: () => setShowHistory(false)
-          }
-        ]}
-      >
-        <div style={{ padding: '10px 0' }}>
-          {historyData.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => handleHistoryItemClick(item)}
-              style={{
-                padding: '12px',
-                borderBottom: '1px solid #f0f0f0',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ fontSize: '24px', marginRight: '12px' }}>
-                  {item.food === '苹果' ? '🍎' : 
-                   item.food === '鸡蛋' ? '🥚' : 
-                   item.food === '米饭' ? '🍚' : 
-                   item.food === '香蕉' ? '🍌' : '🥛'}
-                </span>
-                <div>
-                  <div style={{ fontSize: '16px', color: '#333' }}>{item.food}</div>
-                  <div style={{ fontSize: '12px', color: '#999' }}>{item.date} {item.time}</div>
+      {/* 历史记录弹窗（自定义模态框） */}
+      {showHistory && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowHistory(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '20px',
+            width: '300px',
+            maxWidth: '90%',
+            maxHeight: '60vh',
+            overflowY: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h4 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#333' }}>历史记录</h4>
+            <div style={{ padding: '0' }}>
+              {historyData.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleHistoryItemClick(item)}
+                  style={{
+                    padding: '12px',
+                    borderBottom: '1px solid #f0f0f0',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ fontSize: '24px', marginRight: '12px' }}>
+                      {item.food === '苹果' ? '🍎' :
+                       item.food === '鸡蛋' ? '🥚' :
+                       item.food === '米饭' ? '🍚' :
+                       item.food === '香蕉' ? '🍌' : '🥛'}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: '16px', color: '#333' }}>{item.food}</div>
+                      <div style={{ fontSize: '12px', color: '#999' }}>{item.date} {item.time}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#fa8c16' }}>
+                    {item.calories}kcal
+                  </div>
                 </div>
-              </div>
-              <div style={{ fontSize: '14px', color: '#fa8c16' }}>
-                {item.calories}kcal
-              </div>
+              ))}
             </div>
-          ))}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '15px' }}>
+              <button
+                onClick={() => setShowHistory(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                关闭
+              </button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
     </div>
   );
 }
