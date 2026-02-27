@@ -1,6 +1,7 @@
 // src/pages/Register.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 
 function Register() {
   const [username, setUsername] = useState('');
@@ -17,11 +18,11 @@ function Register() {
       return;
     }
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+const res = await fetch(`${API_BASE}/api/auth/register`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username, password })
+});
       const data = await res.json();
       if (res.ok) {
         alert('注册成功，请登录');

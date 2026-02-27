@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 function Login() {
   // ==================== 状态管理 ====================
   const [username, setUsername] = useState('');        // 手机号
@@ -72,11 +73,12 @@ const handleSubmit = async () => {
 
   setLoading(true);
   try {
-    const res = await fetch('http://localhost:8000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }) // 注意字段名必须为 username
-    });
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username, password })
+});
+
     const data = await res.json();
     if (res.ok) {
       // 登录成功，保存 token
