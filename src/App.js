@@ -1,4 +1,5 @@
 import React from 'react';
+import Register from './pages/Register';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -20,6 +21,7 @@ function App() {
         </nav>
 
         <Routes>
+          <Route path="/register" element={<Register />} />
           <Route path="/" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />

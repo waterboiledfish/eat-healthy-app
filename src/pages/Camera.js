@@ -1,7 +1,8 @@
 // src/pages/Camera.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recognizeFood } from '../services/baiduAI';
+import { matchFood as getNutrition } from '../utils/foodDatabase';
 
 function Camera() {
   const navigate = useNavigate();
@@ -21,8 +22,35 @@ function Camera() {
     { id: 3, name: '米饭', icon: '🍚', calories: 130, time: '18:30' },
     { id: 4, name: '香蕉', icon: '🍌', calories: 89, time: '昨天' }
   ]);
+  const [user, setUser] = useState(null);                  // 当前登录用户信息
 
-  // ==================== 模拟识别结果 ====================
+  // ==================== 获取用户信息 ====================
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/'); // 未登录跳转登录页
+        return;
+      }
+      try {
+        const res = await fetch('http://localhost:8000/api/user/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        } else {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      } catch (err) {
+        console.error('获取用户失败', err);
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  // ==================== 模拟识别结果（备用） ====================
   const mockRecognitionResults = [
     { 
       name: '苹果', 
@@ -56,19 +84,66 @@ function Camera() {
     }
   ];
 
+  // ==================== 工具函数 ====================
+  // 根据食物名称返回图标
+  const getIconForFood = (name) => {
+    const iconMap = {
+      '苹果': '🍎', '香蕉': '🍌', '橙子': '🍊', '草莓': '🍓',
+      '米饭': '🍚', '面条': '🍜', '面包': '🍞', '鸡蛋': '🥚',
+      '鸡肉': '🍗', '牛肉': '🥩', '鱼': '🐟', '牛奶': '🥛',
+      '番茄': '🍅', '黄瓜': '🥒', '胡萝卜': '🥕', '土豆': '🥔'
+    };
+    for (const key in iconMap) {
+      if (name.includes(key)) return iconMap[key];
+    }
+    return '🍽️';
+  };
+
+  // 生成个性化饮食建议
+  const generateAdvice = (food, user) => {
+    if (!food || !user) return '请先完善个人资料';
+
+    const advice = [];
+    
+    // 热量建议
+    if (food.calories > 300) {
+      advice.push('🔥 热量较高，建议午餐时减少主食摄入。');
+    } else if (food.calories < 100) {
+      advice.push('✅ 热量较低，适合作为加餐或零食。');
+    }
+
+    // 蛋白质建议
+    if (food.protein > 15) {
+      advice.push('💪 富含蛋白质，有助于肌肉生长。');
+    } else if (food.protein < 5) {
+      advice.push('🥗 蛋白质含量较低，可搭配鸡蛋或肉类。');
+    }
+
+    // 根据用户身高体重生成简单建议（需要用户填写了身高体重）
+    if (user.height && user.weight) {
+      const heightInM = user.height / 100;
+      const bmi = user.weight / (heightInM * heightInM);
+      if (bmi > 24 && food.calories > 200) {
+        advice.push('⚖️ 你的BMI偏高，建议选择低热量食物。');
+      } else if (bmi < 18.5 && food.calories < 200) {
+        advice.push('⚖️ 你的BMI偏低，可适当增加营养摄入。');
+      }
+    }
+
+    return advice.length > 0 ? advice.join(' ') : '👍 营养均衡，继续保持！';
+  };
+
   // ==================== 事件处理 ====================
 
   // 打开相机/相册
   const handleTakePhoto = () => {
     const useCamera = window.confirm('点击“确定”拍照，取消则从相册选择');
     if (useCamera) {
-      // 拍照
       if (fileInputRef.current) {
         fileInputRef.current.setAttribute('capture', 'environment');
         fileInputRef.current.click();
       }
     } else {
-      // 从相册选择
       if (fileInputRef.current) {
         fileInputRef.current.removeAttribute('capture');
         fileInputRef.current.click();
@@ -81,23 +156,19 @@ function Camera() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      console.log('图片已选择');
+      console.log('请选择图片文件');
       return;
     }
-    // 检查文件大小（限制5MB）
     if (file.size > 5 * 1024 * 1024) {
       console.log('图片不能超过5MB');
       return;
     }
     setImageFile(file);
     
-    // 创建预览URL
     const url = URL.createObjectURL(file);
     setImageUrl(url);
     
-    // 重置识别结果
     setRecognizedFood(null);
     setShowResult(false);
     
@@ -117,7 +188,6 @@ function Camera() {
           let width = img.width;
           let height = img.height;
           
-          // 计算压缩后的尺寸
           if (width > maxWidth) {
             height = Math.round(height * (maxWidth / width));
             width = maxWidth;
@@ -129,10 +199,9 @@ function Camera() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // 转换为blob
           canvas.toBlob((blob) => {
             resolve(blob);
-          }, file.type, 0.8); // 80%质量
+          }, file.type, 0.8);
         };
         img.onerror = reject;
       };
@@ -142,76 +211,74 @@ function Camera() {
 
   // 开始识别
   const handleRecognize = async () => {
-  if (!imageFile) {
-    console.log('请先选择图片');
-    return;
-  }
-
-  setIsUploading(true);
-  setRecognizing(true);
-  setUploadProgress(0);
-
-  try {
-    // 模拟上传进度（保留动画效果）
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
-
-    // 压缩图片
-    const compressedImage = await compressImage(imageFile);
-    const compressedFile = new File([compressedImage], imageFile.name, { type: imageFile.type });
-
-    // 调用真实识别
-    const result = await recognizeFood(compressedFile);
-
-    clearInterval(progressInterval);
-    setUploadProgress(100);
-
-    if (result.success) {
-      // 构建显示用的 food 对象
-      const food = {
-        name: result.food.name,
-        icon: getIconForFood(result.food.name),
-        confidence: result.food.confidence,
-        calories: result.food.calories || 0,
-        protein: result.food.protein || 0,
-        carbs: result.food.carbs || 0,
-        fat: result.food.fat || 0,
-        description: result.source === 'ingredient' ? '果蔬识别' : '菜品识别'
-      };
-      setRecognizedFood(food);
-      setShowResult(true);
-
-      // 添加到最近识别
-      const newRecent = {
-        id: Date.now(),
-        name: food.name,
-        icon: food.icon,
-        calories: food.calories,
-        time: new Date().toLocaleTimeString().substring(0, 5)
-      };
-      setRecentFoods(prev => [newRecent, ...prev.slice(0, 4)]);
-
-      console.log(`识别成功：${food.name}`);
-    } else {
-      console.log('识别失败:', result.message);
-      alert(`识别失败：${result.message || '请重试'}`);
+    if (!imageFile) {
+      console.log('请先选择图片');
+      return;
     }
-  } catch (error) {
-    console.error('识别过程出错:', error);
-    alert('识别过程中发生错误，请重试');
-  } finally {
-    setIsUploading(false);
-    setRecognizing(false);
+
+    setIsUploading(true);
+    setRecognizing(true);
     setUploadProgress(0);
-  }
-};
+
+    try {
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const compressedImage = await compressImage(imageFile);
+      const compressedFile = new File([compressedImage], imageFile.name, { type: imageFile.type });
+
+      const result = await recognizeFood(compressedFile);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (result.success) {
+        const foodName = result.food.name;
+        const nutrition = getNutrition(foodName) || {};
+        
+        const food = {
+          name: foodName,
+          icon: getIconForFood(foodName),
+          confidence: result.food.confidence,
+          calories: nutrition.calories || 0,
+          protein: nutrition.protein || 0,
+          carbs: nutrition.carbs || 0,
+          fat: nutrition.fat || 0,
+          description: result.source === 'ingredient' ? '果蔬识别' : '菜品识别'
+        };
+        setRecognizedFood(food);
+        setShowResult(true);
+
+        const newRecent = {
+          id: Date.now(),
+          name: food.name,
+          icon: food.icon,
+          calories: food.calories,
+          time: new Date().toLocaleTimeString().substring(0, 5)
+        };
+        setRecentFoods(prev => [newRecent, ...prev.slice(0, 4)]);
+
+        console.log(`识别成功：${food.name}`);
+      } else {
+        console.log('识别失败:', result.message);
+        alert(`识别失败：${result.message || '请重试'}`);
+      }
+    } catch (error) {
+      console.error('识别过程出错:', error);
+      alert('识别过程中发生错误，请重试');
+    } finally {
+      setIsUploading(false);
+      setRecognizing(false);
+      setUploadProgress(0);
+    }
+  };
 
   // 重新选择图片
   const handleReset = () => {
@@ -231,7 +298,6 @@ function Camera() {
 
   // 使用示例图片
   const handleUseExample = (foodName) => {
-    // 模拟选择示例图片
     setImageUrl(`https://images.unsplash.com/photo-${foodName === 'apple' ? '1568702846914-96b305d2aaeb' : '1582722872445-44dc5f7e3c8f'}?w=400`);
     setImageFile(new File([], 'example.jpg'));
     setRecognizedFood(null);
@@ -244,7 +310,6 @@ function Camera() {
   const handleRecentClick = (food) => {
     const confirmView = window.confirm(`是否查看${food.name}的详细报告？`);
     if (confirmView) {
-      // 模拟加载历史数据
       setRecognizedFood({
         name: food.name,
         icon: food.icon,
@@ -285,7 +350,6 @@ function Camera() {
         position: 'relative',
         marginBottom: '20px'
       }}>
-        {/* 返回按钮 */}
         <div style={{
           position: 'absolute',
           top: '20px',
@@ -298,7 +362,6 @@ function Camera() {
           ←
         </div>
 
-        {/* 页面标题 */}
         <h2 style={{
           color: 'white',
           textAlign: 'center',
@@ -309,7 +372,6 @@ function Camera() {
           拍照识别食物
         </h2>
 
-        {/* 相机图标 */}
         <div style={{
           position: 'absolute',
           bottom: '-40px',
@@ -367,7 +429,6 @@ function Camera() {
                     objectFit: 'cover'
                   }}
                 />
-                {/* 上传进度遮罩 */}
                 {(isUploading || recognizing) && (
                   <div style={{
                     position: 'absolute',
@@ -385,16 +446,6 @@ function Camera() {
                     <div style={{ fontSize: '16px', marginBottom: '10px' }}>
                       {recognizing ? '🤖 AI识别中...' : '📤 上传中...'}
                     </div>
-                    {/* 暂时注释掉 ProgressBar 以排查问题 */}
-                    {/*
-                    <ProgressBar 
-                      percent={uploadProgress} 
-                      style={{ 
-                        width: '80%',
-                        '--fill-color': 'white'
-                      }} 
-                    />
-                    */}
                   </div>
                 )}
               </>
@@ -413,7 +464,7 @@ function Camera() {
             )}
           </div>
 
-          {/* 操作按钮（用 div 替代 Space） */}
+          {/* 操作按钮 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <button
               onClick={handleTakePhoto}
@@ -524,7 +575,6 @@ function Camera() {
                   justifyContent: 'space-between'
                 }}>
                   <h3 style={{ fontSize: '20px', margin: 0 }}>{recognizedFood.name}</h3>
-                  {/* 用 span 模拟 Tag */}
                   <span style={{
                     padding: '2px 8px',
                     borderRadius: '4px',
@@ -541,7 +591,7 @@ function Camera() {
               </div>
             </div>
 
-            {/* 简要营养信息 */}
+            {/* 营养信息 */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr 1fr',
@@ -583,6 +633,24 @@ function Camera() {
               </div>
             </div>
 
+            {/* 个性化建议卡片 */}
+            {user && recognizedFood && (
+              <div style={{
+                marginTop: '15px',
+                padding: '15px',
+                background: '#f0f9ff',
+                borderRadius: '12px',
+                border: '1px solid #bae6fd'
+              }}>
+                <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#0369a1', margin: '0 0 8px 0' }}>
+                  💡 饮食建议
+                </p>
+                <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.5' }}>
+                  {generateAdvice(recognizedFood, user)}
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleViewReport}
               style={{
@@ -593,7 +661,8 @@ function Camera() {
                 background: '#1677ff',
                 border: 'none',
                 color: 'white',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                marginTop: '15px'
               }}
             >
               📊 查看详细报告
@@ -601,7 +670,7 @@ function Camera() {
           </div>
         )}
 
-        {/* 示例图片（演示用） */}
+        {/* 示例图片 */}
         <div style={{
           background: 'white',
           borderRadius: '16px',
@@ -755,7 +824,7 @@ function Camera() {
           </ul>
         </div>
 
-        {/* 拍照技巧（用 span 替代 Tag） */}
+        {/* 拍照技巧 */}
         <div style={{
           marginTop: '15px',
           marginBottom: '20px',
@@ -794,7 +863,7 @@ function Camera() {
         </div>
       </div>
 
-      {/* 添加动画样式 */}
+      {/* 动画样式 */}
       <style>{`
         @keyframes slideUp {
           from {
@@ -812,16 +881,3 @@ function Camera() {
 }
 
 export default Camera;
-// 根据食物名称返回图标
-const getIconForFood = (name) => {
-  const iconMap = {
-    '苹果': '🍎', '香蕉': '🍌', '橙子': '🍊', '草莓': '🍓',
-    '米饭': '🍚', '面条': '🍜', '面包': '🍞', '鸡蛋': '🥚',
-    '鸡肉': '🍗', '牛肉': '🥩', '鱼': '🐟', '牛奶': '🥛',
-    '番茄': '🍅', '黄瓜': '🥒', '胡萝卜': '🥕', '土豆': '🥔'
-  };
-  for (const key in iconMap) {
-    if (name.includes(key)) return iconMap[key];
-  }
-  return '🍽️';
-};

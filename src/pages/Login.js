@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 function Login() {
   // ==================== 状态管理 ====================
   const [username, setUsername] = useState('');        // 手机号
@@ -7,15 +7,15 @@ function Login() {
   const [remember, setRemember] = useState(false);     // 记住密码
   const [errors, setErrors] = useState({});            // 错误信息
   const [loading, setLoading] = useState(false);       // 加载状态
-
+const navigate = useNavigate();
   // ==================== 表单验证 ====================
   // 验证手机号格式
-  const validatePhone = (phone) => {
-    if (!phone) return '手机号不能为空';
-    if (phone.length !== 11) return '手机号必须是11位';
-    if (!/^1\d{10}$/.test(phone)) return '手机号格式不正确';
-    return '';
-  };
+const validateUsername = (username) => {
+  if (!username) return '用户名不能为空';
+  // 如果需要长度限制，比如至少3位，可以添加
+   if (username.length < 3) return '用户名至少3位';
+  return '';
+};
 
   // 验证密码格式
   const validatePwd = (pwd) => {
@@ -28,8 +28,8 @@ function Login() {
   const validateForm = () => {
     const newErrors = {};
     
-    const phoneError = validatePhone(username);
-    if (phoneError) newErrors.username = phoneError;
+const usernameError = validateUsername(username);
+if (usernameError) newErrors.username = usernameError;
     
     const pwdError = validatePwd(password);
     if (pwdError) newErrors.password = pwdError;
@@ -61,34 +61,39 @@ function Login() {
   };
 
   // 提交登录
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      const firstError = Object.values(errors).find(err => err);
-      if (firstError) {
-        alert(firstError); // 用原生alert替代Toast
-      }
-      return;
+const handleSubmit = async () => {
+  if (!validateForm()) {
+    const firstError = Object.values(errors).find(err => err);
+    if (firstError) {
+      alert(firstError);
     }
+    return;
+  }
 
-    setLoading(true);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (username === '13800138000' && password === '123456') {
-        alert('登录成功！'); // 用alert提示
-        // 登录成功后可以跳转，例如 window.location.href = '/camera';
-        console.log('登录成功，用户信息：', { username, remember });
-      } else {
-        alert('手机号或密码错误');
-      }
-    } catch (error) {
-      alert('登录失败，请重试');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const res = await fetch('http://localhost:8000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }) // 注意字段名必须为 username
+    });
+    const data = await res.json();
+    if (res.ok) {
+      // 登录成功，保存 token
+      localStorage.setItem('token', data.access_token);
+      alert('登录成功！');
+      // 跳转到拍照页面
+      window.location.href = '/camera'; // 或者用 useNavigate
+    } else {
+      alert(data.detail || '登录失败');
     }
-  };
-
+  } catch (error) {
+    console.error(error);
+    alert('网络错误，请稍后重试');
+  } finally {
+    setLoading(false);
+  }
+};
   // 处理回车键登录
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !loading) {
@@ -153,37 +158,38 @@ function Login() {
         </div>
 
         {/* 手机号输入框 */}
-        <div style={{ marginBottom: errors.username ? '4px' : '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-            <span style={{ fontSize: '14px', color: '#666', marginRight: '8px' }}>📱</span>
-            <span style={{ fontSize: '14px', color: '#666' }}>手机号</span>
-          </div>
-          
-          <input
-            type="text"
-            placeholder="请输入手机号"
-            value={username}
-            onChange={handleUsernameChange}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: errors.username ? '2px solid #ff4d4f' : '1px solid #e5e5e5',
-              backgroundColor: '#f8f9fa',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
-          
-          {errors.username && (
-            <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '6px', marginLeft: '12px' }}>
-              ⚠️ {errors.username}
-            </div>
-          )}
-        </div>
+{/* 用户名输入框 */}
+<div style={{ marginBottom: errors.username ? '4px' : '20px' }}>
+  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+    <span style={{ fontSize: '14px', color: '#666', marginRight: '8px' }}>👤</span>
+    <span style={{ fontSize: '14px', color: '#666' }}>用户名</span>
+  </div>
+  
+  <input
+    type="text"
+    placeholder="请输入用户名/手机号"
+    value={username}
+    onChange={handleUsernameChange}
+    onKeyPress={handleKeyPress}
+    disabled={loading}
+    style={{
+      width: '100%',
+      padding: '14px 16px',
+      fontSize: '16px',
+      borderRadius: '12px',
+      border: errors.username ? '2px solid #ff4d4f' : '1px solid #e5e5e5',
+      backgroundColor: '#f8f9fa',
+      outline: 'none',
+      boxSizing: 'border-box'
+    }}
+  />
+  
+  {errors.username && (
+    <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '6px', marginLeft: '12px' }}>
+      ⚠️ {errors.username}
+    </div>
+  )}
+</div>
 
         {/* 密码输入框 */}
         <div style={{ marginTop: '16px', marginBottom: errors.password ? '4px' : '20px' }}>
@@ -278,7 +284,10 @@ function Login() {
           还没有账号？{' '}
           <a 
             href="#" 
-            onClick={handleRegister}
+          onClick={(e) => {
+  e.preventDefault();
+  navigate('/register');
+}}
             style={{ color: '#667eea', textDecoration: 'none', fontWeight: '500' }}
           >
             立即注册
@@ -343,21 +352,20 @@ function Login() {
         </div>
 
         {/* 演示账号提示 */}
-        <div style={{ 
-          marginTop: '24px',
-          padding: '12px',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#999',
-          textAlign: 'center'
-        }}>
-          <p style={{ margin: '0 0 4px 0' }}>
-            <span style={{ color: '#667eea' }}>✨ 演示账号：</span>
-          </p>
-          <p style={{ margin: '2px 0' }}>手机号：13800138000</p>
-          <p style={{ margin: '2px 0' }}>密码：123456</p>
-        </div>
+<div style={{ 
+  marginTop: '24px',
+  padding: '12px',
+  backgroundColor: '#f8f9fa',
+  borderRadius: '8px',
+  fontSize: '12px',
+  color: '#999',
+  textAlign: 'center'
+}}>
+  <p style={{ margin: '0 0 4px 0' }}>
+    <span style={{ color: '#667eea' }}>✨ 提示：</span>
+  </p>
+  <p style={{ margin: '2px 0' }}>请使用注册的账号登录。</p>
+</div>
       </div>
     </div>
   );
